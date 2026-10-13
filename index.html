@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXON</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --abyss:#05070d;--cortex:rgba(12,18,32,.74);--line:#1b2744;--ivory:#eaf0ff;--mist:#8e9bbd;
+  --dendrite:#7c8cff;--synapse:#4fe3d4;--ember:#ff7a59;--gain:#8cf0a8;--amber:#ffc46b;
+  --display:"Sora",system-ui,sans-serif;--num:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(1200px 700px at 50% 40%,#0b1226 0%,var(--abyss) 70%);color:var(--ivory);
+  font:400 13px/1.45 var(--display);display:grid;gap:12px;padding:12px;
+  grid-template-columns:290px minmax(0,1fr) 330px;grid-template-rows:auto minmax(380px,1fr) 250px;
+  grid-template-areas:"top top top" "left stage right" "bot bot bot"}
+header{grid-area:top;display:flex;align-items:center;gap:14px;padding:4px 6px}
+.brand{font-weight:600;font-size:20px;letter-spacing:.3em}
+.badge{padding:3px 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;background:var(--cortex)}
+.badge.paper{color:var(--synapse);border-color:#1d5a60}.badge.live{color:var(--ember);border-color:#7a3322}.badge.demo{color:var(--amber);border-color:#6b5222}
+.sub{color:var(--mist);flex:1}
+.link{display:flex;align-items:center;gap:7px;color:var(--mist)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.dot.on{background:var(--synapse);box-shadow:0 0 10px var(--synapse)}
+.panel{background:var(--cortex);border:1px solid var(--line);border-radius:14px;padding:14px 16px;backdrop-filter:blur(8px);min-height:0}
+h2{margin:0 0 10px;font-size:12.5px;font-weight:600;color:var(--mist)}
+#left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto;padding-right:2px}
+#right{grid-area:right;display:flex;flex-direction:column}
+#stage{grid-area:stage;position:relative;border-radius:18px;border:1px solid var(--line);overflow:hidden;
+  background:radial-gradient(600px 360px at 50% 50%,rgba(124,140,255,.07),transparent 70%)}
+canvas{position:absolute;inset:0;display:block}
+#bot{grid-area:bot;display:grid;grid-template-columns:1.1fr 1fr;gap:12px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.pnl{font-size:34px;font-weight:300;letter-spacing:-.02em}
+.pos{color:var(--gain)}.neg{color:var(--ember)}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.grid div span{display:block;color:var(--mist);font-size:11.5px}.grid div b{font:500 15px var(--num)}
+.bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:6px 0 10px;background:#0a1020}
+.bar i{display:block;height:100%}
+.leg{display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;font-size:12px;color:var(--mist)}
+.leg u{width:8px;height:8px;border-radius:2px;display:block}
+.be{margin-top:10px;font-size:12.5px}.be b{font:500 18px var(--num);color:var(--amber)}
+.ctl{display:flex;gap:8px}
+button{flex:1;font:600 12.5px var(--display);padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:#0e1730;color:var(--ivory);cursor:pointer}
+button:hover{border-color:var(--dendrite)}button:focus-visible{outline:2px solid var(--synapse);outline-offset:2px}
+button.kill{border-color:#7a3322;color:var(--ember)}
+#feed{overflow:auto;flex:1;display:flex;flex-direction:column;gap:2px;margin:0 -6px;padding:0 6px}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #121b33}
+.row b{font-weight:600}.row small{display:block;color:var(--mist);font:400 11px var(--num)}
+.chip{align-self:center;font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mist);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.buy{color:var(--synapse);border-color:#1d5a60}.chip.skip{color:var(--ember);border-color:#5a2a20}
+.chip.win{color:var(--gain);border-color:#2a6b45}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--mist);font-weight:400;padding:0 0 6px;font-size:11.5px}
+td{padding:5px 0;border-top:1px solid #121b33}td.r,th.r{text-align:right}
+.empty{color:var(--mist);padding:10px 0}
+.tablewrap{overflow:auto;max-height:178px}
+.note{position:absolute;left:14px;bottom:10px;color:var(--mist);font-size:11.5px;max-width:60%}
+@media(max-width:1100px){body{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"top" "stage" "left" "right" "bot";height:auto}
+  #stage{height:440px}#feed{max-height:320px}#bot{grid-template-columns:1fr}}
+
+input{width:100%;background:#0a1020;border:1px solid var(--line);border-radius:9px;color:var(--ivory);padding:8px 10px;font:400 12.5px var(--num)}
+input:focus-visible{outline:2px solid var(--synapse);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.kv{display:flex;justify-content:space-between;gap:8px;margin-top:8px;color:var(--mist);font-size:12px}.kv b{color:var(--ivory);font-weight:400;font-family:var(--num)}
+.msg{margin-top:8px;color:var(--amber);font-size:12px;min-height:16px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}.seg button.on{border-color:var(--synapse);color:var(--synapse)}.seg button#mLive.on{border-color:var(--ember);color:var(--ember)}
+.go{width:100%;border-color:#1d5a60;color:var(--synapse)}
+.set{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.set label{font-size:11.5px;color:var(--mist);display:block}.set label.w{grid-column:1/3}.set input{margin-top:4px}
+[hidden]{display:none!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand">AXON</div>
+  <span id="badge" class="badge demo">Demo</span>
+  <div id="sub" class="sub">Synthetic feed. Press Start sniper to watch real pump.fun launches.</div>
+  <div class="link"><span id="dot" class="dot"></span><span id="linktxt">Feed offline</span></div>
+</header>
+
+<aside id="left">
+  <section class="panel">
+    <h2>Net profit after all costs</h2>
+    <div id="pnl" class="pnl num">0.0000 SOL</div>
+    <div class="grid">
+      <div><span>Scanned</span><b id="sScan">0</b></div>
+      <div><span>Sniped</span><b id="sSnipe">0</b></div>
+      <div><span>Skipped</span><b id="sSkip">0</b></div>
+      <div><span>Wins</span><b id="sWin">0</b></div>
+      <div><span>Losses</span><b id="sLoss">0</b></div>
+      <div><span>Open</span><b id="sOpen">0</b></div>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>What a trade has to beat</h2>
+    <div id="bar" class="bar"></div>
+    <div id="leg" class="leg"></div>
+    <div class="be">Price must rise <b id="be">0%</b> just to break even.</div>
+  </section>
+  <section class="panel">
+    <h2>Wallet</h2>
+    <button id="wConnect" style="width:100%">Connect Phantom or Solflare</button>
+    <div class="kv"><span>Main wallet</span><b id="wMain">not connected</b></div>
+    <div class="kv"><span>Session wallet</span><b id="wSess">none</b></div>
+    <div class="two" style="grid-template-columns:1fr"><input id="wPass" type="password" placeholder="Session wallet passphrase" autocomplete="off"></div>
+    <div class="two"><button id="wCreate">Create</button><button id="wUnlock">Unlock</button></div>
+    <div id="sessActions" hidden>
+      <div class="two"><input id="wAmt" type="number" step="0.01" min="0" value="0.2" aria-label="Amount in SOL"><button id="wFund">Fund with SOL</button></div>
+      <div class="two"><button id="wWithdraw">Withdraw all</button><button id="wExport">Back up key</button></div>
+    </div>
+    <div id="wMsg" class="msg" role="status"></div>
+  </section>
+  <section class="panel">
+    <h2>Sniper</h2>
+    <div class="seg"><button id="mPaper" class="on">Paper</button><button id="mLive">Live</button></div>
+    <button id="eStart" class="go">Start sniper</button>
+    <div class="set">
+      <label class="w">RPC endpoint<input id="iRpc" type="text" autocomplete="off" spellcheck="false"></label>
+      <label>Buy size (SOL)<input id="iBuy" type="number" step="0.01"></label>
+      <label>Profit target (SOL)<input id="iTarget" type="number" step="0.001"></label>
+      <label>Stop loss (SOL)<input id="iStop" type="number" step="0.001"></label>
+      <label>Max hold (sec)<input id="iHold" type="number" step="5"></label>
+      <label>Max open<input id="iMax" type="number" step="1"></label>
+      <label>Loss limit (SOL)<input id="iLoss" type="number" step="0.01"></label>
+      <label>Platform fee (%)<input id="iFee" type="number" step="0.05"></label>
+    </div>
+    <div class="two"><button id="rTest">Test RPC</button><button id="eCsv">Export trades</button></div>
+    <div id="rOut" class="msg"></div>
+  </section>
+  <section class="panel ctl">
+    <button id="bPause">Pause sniping</button>
+    <button id="bKill" class="kill">Sell all and stop</button>
+  </section>
+</aside>
+
+<main id="stage">
+  <canvas id="net" aria-label="Live neural map of the trading pipeline"></canvas>
+  <div class="note">Violet pulses are launches being inspected. Teal is a buy. Green and orange are exits. Orange from the left is a skipped token.</div>
+</main>
+
+<aside id="right" class="panel">
+  <h2>New launches</h2>
+  <div id="feed"></div>
+</aside>
+
+<section id="bot">
+  <div class="panel"><h2>Open positions</h2><div class="tablewrap"><table><thead><tr><th>Token</th><th class="r">Held</th><th class="r">Net if sold now</th></tr></thead><tbody id="open"></tbody></table></div></div>
+  <div class="panel"><h2>Closed trades</h2><div class="tablewrap"><table><thead><tr><th>Token</th><th>Exit</th><th class="r">Held</th><th class="r">Net</th></tr></thead><tbody id="closed"></tbody></table></div></div>
+</section>
+
+<script>
+const $ = s => document.querySelector(s);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- state ---------------- */
+const S = {pnl:0,wins:0,losses:0,scanned:0,sniped:0,skipped:0,paused:false,mode:'demo',link:false,
+  open:new Map(),closed:[],
+  cfg:{buySol:.05,pumpFee:.01,portalFee:.005,priorityFeeSol:.0003,ataRentSol:.00204,targetNetSol:.003,stopLossSol:.008,maxHoldSec:45}};
+
+/* ---------------- neural canvas ---------------- */
+const cv = $('#net'), cx = cv.getContext('2d');
+let W = 0, H = 0;
+function resize(){const r=cv.parentElement.getBoundingClientRect(),d=devicePixelRatio||1;W=r.width;H=r.height;
+  cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';cx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',resize);
+
+const N = {
+  feed:{x:.08,y:.5,r:11,l:'Launch feed',s:'pump.fun',c:'#7c8cff'},
+  dev:{x:.27,y:.2,r:7,l:'Creator check',s:'dev buy, metadata',c:'#7c8cff'},
+  curve:{x:.27,y:.5,r:7,l:'Curve check',s:'price impact',c:'#7c8cff'},
+  cost:{x:.27,y:.8,r:7,l:'Cost check',s:'fees, break-even',c:'#7c8cff'},
+  risk:{x:.45,y:.5,r:10,l:'Risk gate',s:'limits, kill switch',c:'#ffc46b'},
+  entry:{x:.61,y:.5,r:10,l:'Entry',s:'instant buy',c:'#4fe3d4'},
+  hold:{x:.74,y:.5,r:10,l:'Position',s:'net P&L watch',c:'#4fe3d4'},
+  take:{x:.87,y:.22,r:8,l:'Take profit',s:'net target hit',c:'#8cf0a8'},
+  cut:{x:.87,y:.78,r:8,l:'Cut loss',s:'stop or timeout',c:'#ff7a59'},
+  ledger:{x:.94,y:.5,r:9,l:'Ledger',s:'net P&L',c:'#eaf0ff'}
+};
+Object.values(N).forEach(n=>{n.a=0;n.cur=n.c});
+const EDGES = [['feed','dev'],['feed','curve'],['feed','cost'],['dev','risk'],['curve','risk'],['cost','risk'],
+  ['risk','entry'],['entry','hold'],['hold','take'],['hold','cut'],['take','ledger'],['cut','ledger']];
+const BEND = {}, HEAT = {};
+EDGES.forEach(([a,b],i)=>{BEND[a+b]=((i*37)%5-2)*.035;HEAT[a+b]={v:0,c:'#7c8cff'}});
+const P = n => ({x:n.x*W,y:n.y*H});
+function ctrl(a,b,bend){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;return{x:mx-(b.y-a.y)*bend,y:my+(b.x-a.x)*bend}}
+function pt(ka,kb,t){const a=P(N[ka]),b=P(N[kb]),c=ctrl(a,b,BEND[ka+kb]),u=1-t;
+  return{x:u*u*a.x+2*u*t*c.x+t*t*b.x,y:u*u*a.y+2*u*t*c.y+t*t*b.y}}
+
+const AM = Array.from({length:70},()=>({x:Math.random(),y:Math.random(),ph:Math.random()*6.28,sp:.2+Math.random()*.5}));
+const AE = [];
+AM.forEach((a,i)=>AM.map((b,j)=>({j,d:(a.x-b.x)**2+(a.y-b.y)**2})).filter(o=>o.j!==i).sort((p,q)=>p.d-q.d).slice(0,2).forEach(o=>AE.push([i,o.j])));
+const amPos = (a,t)=>({x:(a.x+Math.sin(t*a.sp+a.ph)*.008)*W,y:(a.y+Math.cos(t*a.sp*.8+a.ph)*.008)*H});
+const pulses = [], amP = [];
+function fire(path,color,speed=1.4,w=1){pulses.push({path,i:0,t:0,color,speed,w});HEAT[path[0]+path[1]]&&(HEAT[path[0]+path[1]]={v:1,c:color})}
+
+function drawAmbient(t,dt){
+  cx.lineWidth=1;cx.strokeStyle='rgba(124,140,255,.07)';cx.beginPath();
+  AE.forEach(([i,j])=>{const a=amPos(AM[i],t),b=amPos(AM[j],t);cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y)});cx.stroke();
+  AM.forEach(a=>{const p=amPos(a,t),tw=.25+.2*Math.sin(t*a.sp*3+a.ph);cx.fillStyle=`rgba(142,155,189,${tw})`;cx.beginPath();cx.arc(p.x,p.y,1.4,0,6.28);cx.fill()});
+  if(!RM&&Math.random()<dt*7)amP.push({e:AE[Math.random()*AE.length|0],t:0});
+  for(let k=amP.length-1;k>=0;k--){const q=amP[k];q.t+=dt*.9;if(q.t>=1){amP.splice(k,1);continue}
+    const a=amPos(AM[q.e[0]],t),b=amPos(AM[q.e[1]],t);cx.fillStyle='rgba(124,140,255,.75)';
+    cx.beginPath();cx.arc(a.x+(b.x-a.x)*q.t,a.y+(b.y-a.y)*q.t,2,0,6.28);cx.fill()}
+}
+function drawEdges(dt){
+  EDGES.forEach(([ka,kb])=>{const a=P(N[ka]),b=P(N[kb]),c=ctrl(a,b,BEND[ka+kb]),h=HEAT[ka+kb];
+    cx.beginPath();cx.moveTo(a.x,a.y);cx.quadraticCurveTo(c.x,c.y,b.x,b.y);
+    cx.strokeStyle='rgba(124,140,255,.24)';cx.lineWidth=1.3;cx.stroke();
+    if(h.v>.02){cx.strokeStyle=h.c;cx.globalAlpha=h.v*.65;cx.lineWidth=2;cx.stroke();cx.globalAlpha=1;h.v*=Math.pow(.2,dt)}});
+}
+function updatePulses(dt){
+  cx.globalCompositeOperation='lighter';
+  for(let k=pulses.length-1;k>=0;k--){const p=pulses[k];p.t+=dt*p.speed;
+    if(p.t>=1){const n=N[p.path[p.i+1]];n.a=1;n.cur=p.color;p.i++;p.t=0;
+      if(p.i>=p.path.length-1){pulses.splice(k,1);continue}
+      const key=p.path[p.i]+p.path[p.i+1];if(HEAT[key])HEAT[key]={v:1,c:p.color}}
+    for(let s=0;s<6;s++){const tt=Math.max(0,p.t-s*.045),q=pt(p.path[p.i],p.path[p.i+1],tt);
+      cx.globalAlpha=(1-s/6)*.9;cx.fillStyle=p.color;cx.shadowColor=p.color;cx.shadowBlur=14;
+      cx.beginPath();cx.arc(q.x,q.y,(3.6-s*.45)*p.w,0,6.28);cx.fill()}}
+  cx.globalAlpha=1;cx.shadowBlur=0;cx.globalCompositeOperation='source-over';
+}
+function drawNodes(dt){
+  Object.values(N).forEach(n=>{const p=P(n);n.a*=Math.pow(.25,dt);
+    const g=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,n.r*(2.6+n.a*3));
+    g.addColorStop(0,n.cur);g.addColorStop(1,'transparent');cx.globalAlpha=.12+.5*n.a;cx.fillStyle=g;
+    cx.beginPath();cx.arc(p.x,p.y,n.r*(2.6+n.a*3),0,6.28);cx.fill();cx.globalAlpha=1;
+    cx.fillStyle='#0a1124';cx.strokeStyle=n.c;cx.lineWidth=1.6;cx.beginPath();cx.arc(p.x,p.y,n.r,0,6.28);cx.fill();cx.stroke();
+    cx.fillStyle=n.cur;cx.globalAlpha=.55+.45*n.a;cx.beginPath();cx.arc(p.x,p.y,n.r*.45,0,6.28);cx.fill();cx.globalAlpha=1;
+    cx.textAlign='center';cx.fillStyle='#eaf0ff';cx.font='600 12px Sora, sans-serif';cx.fillText(n.l,p.x,p.y+n.r+17);
+    cx.fillStyle='#8e9bbd';cx.font='400 10.5px "IBM Plex Mono", monospace';cx.fillText(n.s,p.x,p.y+n.r+31)});
+}
+let last = performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;cx.clearRect(0,0,W,H);
+  drawAmbient(now/1000,dt);drawEdges(dt);updatePulses(dt);drawNodes(dt);requestAnimationFrame(frame)}
+
+/* ---------------- HUD ---------------- */
+const sol = v => (v>=0?'+':'')+v.toFixed(4);
+const cls = v => v>=0?'pos':'neg';
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function renderStats(){
+  const e=$('#pnl');e.textContent=sol(S.pnl)+' SOL';e.className='pnl num '+cls(S.pnl);
+  $('#sScan').textContent=S.scanned;$('#sSnipe').textContent=S.sniped;$('#sSkip').textContent=S.skipped;
+  $('#sWin').textContent=S.wins;$('#sLoss').textContent=S.losses;$('#sOpen').textContent=S.open.size;
+}
+function renderCost(){
+  const c=S.cfg,fees=2*c.pumpFee*100,portal=2*c.portalFee*100,prio=2*c.priorityFeeSol/c.buySol*100,rent=c.ataRentSol/c.buySol*100,imp=1;
+  const parts=[['Platform fee, both ways',fees,'#7c8cff'],['Router fee, both ways',portal,'#4fe3d4'],['Priority fees',prio,'#ffc46b'],['Token account rent',rent,'#ff7a59'],['Typical price impact',imp,'#8e9bbd']];
+  const tot=parts.reduce((a,p)=>a+p[1],0);
+  $('#bar').innerHTML=parts.map(p=>`<i style="width:${p[1]/tot*100}%;background:${p[2]}"></i>`).join('');
+  $('#leg').innerHTML=parts.map(p=>`<u style="background:${p[2]}"></u><span>${p[0]}</span><span class="num">${p[1].toFixed(2)}%</span>`).join('');
+  $('#be').textContent=tot.toFixed(1)+'%';
+}
+function renderMode(){
+  const b=$('#badge');b.className='badge '+S.mode;
+  b.textContent={demo:'Demo',paper:'Paper',live:'Live'}[S.mode];
+  $('#sub').textContent={demo:'Synthetic feed. Press Start sniper to watch real pump.fun launches.',
+    paper:'Real launches, simulated fills. No orders are sent.',live:'Real launches, real orders from your session wallet.'}[S.mode];
+  $('#dot').className='dot'+(S.link?' on':'');$('#linktxt').textContent=S.link?'Feed connected':'Feed offline';
+}
+function renderTables(){
+  const now=Date.now();
+  $('#open').innerHTML=S.open.size?[...S.open.values()].map(p=>`<tr><td>${esc(p.symbol)}</td><td class="r num">${((now-p.ts)/1000).toFixed(0)}s</td><td class="r num ${cls(p.net??0)}">${sol(p.net??0)}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">No open positions. Waiting for a launch that passes every check.</td></tr>';
+  $('#closed').innerHTML=S.closed.length?S.closed.slice(0,30).map(c=>`<tr><td>${esc(c.symbol)}</td><td>${esc(c.reason)}</td><td class="r num">${(c.heldMs/1000).toFixed(0)}s</td><td class="r num ${cls(c.net)}">${sol(c.net)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">Closed trades will appear here.</td></tr>';
+}
+const feedEl=$('#feed');
+function addFeed(e){const d=document.createElement('div');d.className='row';d.dataset.m=e.mint;
+  d.innerHTML=`<div><b>${esc(e.symbol||'?')}</b><small>dev buy ${(+e.devBuy||0).toFixed(2)} SOL, mcap ${(+e.mc||0).toFixed(1)}</small></div><span class="chip">checking</span>`;
+  feedEl.prepend(d);while(feedEl.children.length>60)feedEl.lastChild.remove()}
+function setFeed(m,kind,txt){const c=feedEl.querySelector(`[data-m="${m}"] .chip`);if(c){c.className='chip '+kind;c.textContent=txt}}
+
+/* ---------------- events (same shape from bot and demo) ---------------- */
+function onEvt(e){
+  switch(e.type){
+    case 'hello':Object.assign(S.cfg,e.cfg);S.mode=e.mode;renderMode();renderCost();break;
+    case 'token':S.scanned++;addFeed(e);['dev','curve','cost'].forEach(k=>fire(['feed',k,'risk'],'#7c8cff',1.5,.8));break;
+    case 'skip':S.skipped++;setFeed(e.mint,'skip',e.reason);
+      fire(e.node==='risk'?['curve','risk']:['feed',e.node],'#ff7a59',2.1,1);break;
+    case 'buy':S.sniped++;S.open.set(e.mint,{symbol:e.symbol,ts:Date.now(),net:null});setFeed(e.mint,'buy','sniped');
+      fire(['risk','entry','hold'],'#4fe3d4',1.9,1.4);break;
+    case 'cancel':S.open.delete(e.mint);S.sniped=Math.max(0,S.sniped-1);setFeed(e.mint,'skip','buy failed');break;
+    case 'tick':{const p=S.open.get(e.mint);if(p)p.net=e.net;break}
+    case 'sell':{S.open.delete(e.mint);S.closed.unshift(e);S.pnl+=e.net;e.net>0?S.wins++:S.losses++;
+      setFeed(e.mint,e.net>0?'win':'skip',e.net>0?'sold '+sol(e.net):'sold '+sol(e.net));
+      fire(['hold',e.net>0?'take':'cut','ledger'],e.net>0?'#8cf0a8':'#ff7a59',1.7,1.4);break}
+    case 'stats':break;
+  }
+  renderStats();
+}
+
+/* ---------------- synthetic demo (not a performance indicator) ---------------- */
+const NAMES=['PEPEWIF','MOONCAT','BONKERS','DOGEAI','FROGGY','SHIBX','GIGACHAD','WOJAK','TURBO','NEURAL','KEKW','ZOOMER'];
+const demo={on:false,n:0,pos:new Map(),t1:0,t2:0};
+function demoToken(){
+  if(S.paused)return;const mint='d'+(++demo.n),sym=NAMES[Math.random()*NAMES.length|0]+(Math.random()*99|0),c=S.cfg;
+  onEvt({type:'token',mint,symbol:sym,name:sym,devBuy:Math.random()*2,mc:28+Math.random()*4});
+  const r=Math.random(),sk=[[.3,'dev','dev holds too much'],[.5,'curve','price impact too high'],[.62,'cost','break-even too far'],[.68,'risk','max positions open']];
+  for(const [p,node,reason] of sk)if(r<p){setTimeout(()=>onEvt({type:'skip',mint,symbol:sym,reason,node}),350);return}
+  if(demo.pos.size>=3){setTimeout(()=>onEvt({type:'skip',mint,symbol:sym,reason:'max positions open',node:'risk'}),350);return}
+  const start=-(c.priorityFeeSol*2+c.ataRentSol+c.buySol*(c.pumpFee+c.portalFee)*2+c.buySol*.01);
+  setTimeout(()=>{onEvt({type:'buy',mint,symbol:sym,sol:c.buySol});demo.pos.set(mint,{sym,net:start,t0:Date.now()})},350);
+}
+function demoStep(){
+  const c=S.cfg;demo.pos.forEach((p,m)=>{
+    p.net+=(Math.random()-.5)*.0035+(Math.random()<.04?.008:0);onEvt({type:'tick',mint:m,net:p.net});
+    const held=Date.now()-p.t0,why=p.net>=c.targetNetSol?'take-profit':p.net<=-c.stopLossSol?'stop-loss':held>=c.maxHoldSec*1000?'timeout':null;
+    if(why){demo.pos.delete(m);onEvt({type:'sell',mint:m,symbol:p.sym,reason:why,net:p.net,heldMs:held})}});
+}
+function startDemo(){if(demo.on)return;demo.on=true;S.mode='demo';renderMode();renderCost();
+  demo.t1=setInterval(demoToken,1100);demo.t2=setInterval(demoStep,500)}
+function stopDemo(){demo.on=false;clearInterval(demo.t1);clearInterval(demo.t2);demo.pos.clear()}
+function resetState(){Object.assign(S,{pnl:0,wins:0,losses:0,scanned:0,sniped:0,skipped:0,paused:false});S.open.clear();S.closed.length=0;feedEl.innerHTML='';
+  $('#bPause').textContent='Pause sniping';renderStats();renderTables()}
+
+/* ---------------- bot link ---------------- */
+let ws;
+function connect(){
+  try{ws=new WebSocket('ws://127.0.0.1:8787')}catch{setTimeout(connect,4000);return}
+  ws.onopen=()=>{stopDemo();resetState();S.link=true;renderMode()};
+  ws.onmessage=m=>{try{onEvt(JSON.parse(m.data))}catch{}};
+  ws.onclose=()=>{const was=S.link;S.link=false;if(was)resetState();startDemo();renderMode();setTimeout(connect,4000)};
+  ws.onerror=()=>ws.close();
+}
+const send=o=>{if(S.link&&ws.readyState===1)ws.send(JSON.stringify(o))};
+$('#bPause').onclick=()=>{S.paused=!S.paused;$('#bPause').textContent=S.paused?'Resume sniping':'Pause sniping';send({cmd:S.paused?'pause':'resume'})};
+$('#bKill').onclick=()=>{if(S.link){send({cmd:'kill'})}else{demo.pos.forEach((p,m)=>{demo.pos.delete(m);onEvt({type:'sell',mint:m,symbol:p.sym,reason:'kill',net:p.net,heldMs:Date.now()-p.t0})})}
+  S.paused=true;$('#bPause').textContent='Resume sniping'};
+
+/* ---------------- boot ---------------- */
+resize();renderMode();renderCost();renderStats();renderTables();
+setInterval(renderTables,500);
+requestAnimationFrame(frame);
+setTimeout(()=>{if(!S.link)startDemo()},1200);
+</script>
+<script>
+(() => {
+const { Connection, Keypair, PublicKey, SystemProgram, Transaction, VersionedTransaction, LAMPORTS_PER_SOL } = solanaWeb3;
+const q$ = s => document.querySelector(s);
+
+/* ---------- settings (stored only in this browser) ---------- */
+const DEF = { rpc: 'https://api.mainnet-beta.solana.com', buy: .05, target: .003, stop: .008, hold: 45, max: 3, loss: .1, fee: 1 };
+const cfg = Object.assign({}, DEF, JSON.parse(localStorage.getItem('axon.cfg') || '{}'));
+const FIXED = { portal: .005, prio: .0003, rent: .00204, netfee: .00001 }; // router fee, priority fee, token-account rent, base fee
+const FIELDS = { iRpc: 'rpc', iBuy: 'buy', iTarget: 'target', iStop: 'stop', iHold: 'hold', iMax: 'max', iLoss: 'loss', iFee: 'fee' };
+const pumpFee = () => cfg.fee / 100;
+const fixedCost = () => FIXED.prio * 2 + FIXED.netfee + FIXED.rent;
+function syncCfg() {
+  Object.assign(S.cfg, { buySol: cfg.buy, pumpFee: pumpFee(), portalFee: FIXED.portal, priorityFeeSol: FIXED.prio,
+    ataRentSol: FIXED.rent, targetNetSol: cfg.target, stopLossSol: cfg.stop, maxHoldSec: cfg.hold });
+  renderCost();
+}
+Object.entries(FIELDS).forEach(([id, k]) => {
+  const el = q$('#' + id); el.value = cfg[k];
+  el.addEventListener('change', () => {
+    const v = k === 'rpc' ? el.value.trim() : Number(el.value);
+    if (k !== 'rpc' && !(v > 0)) { el.value = cfg[k]; return; }
+    cfg[k] = v; localStorage.setItem('axon.cfg', JSON.stringify(cfg)); syncCfg();
+  });
+});
+
+/* ---------- state ---------- */
+const E = { on: false, live: false, paused: false, ws: null, open: new Map(), proxy: false, wake: null };
+let wallet = null, burner = null, _c = null;
+const msg = t => { q$('#wMsg').textContent = t || ''; };
+const short = k => k.slice(0, 4) + '…' + k.slice(-4);
+const conn = () => { if (!_c || _c.rpcEndpoint !== cfg.rpc) _c = new Connection(cfg.rpc, 'confirmed'); return _c; };
+const bal = async pk => { try { return (await conn().getBalance(pk)) / LAMPORTS_PER_SOL; } catch { return null; } };
+
+/* ---------- encrypted session wallet (never leaves this browser) ---------- */
+const enc = new TextEncoder();
+async function derive(pass, salt) {
+  const m = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' }, m, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function seal(secret, pass) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await derive(pass, salt), secret));
+  return JSON.stringify({ s: [...salt], i: [...iv], c: [...ct] });
+}
+async function unseal(pass, blob) {
+  const o = JSON.parse(blob);
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(o.i) }, await derive(pass, new Uint8Array(o.s)), new Uint8Array(o.c)));
+}
+
+async function refresh() {
+  const has = !!localStorage.getItem('axon.session');
+  const [m, s] = await Promise.all([wallet ? bal(wallet.pk) : null, burner ? bal(burner.publicKey) : null]);
+  q$('#wMain').textContent = wallet ? short(wallet.pk.toBase58()) + (m != null ? ` (${m.toFixed(3)} SOL)` : '') : 'not connected';
+  q$('#wSess').textContent = burner ? short(burner.publicKey.toBase58()) + (s != null ? ` (${s.toFixed(3)} SOL)` : '') : (has ? 'locked' : 'none');
+  q$('#sessActions').hidden = !burner;
+}
+
+/* ---------- wallet authorisation (approve once in Phantom or Solflare) ---------- */
+const getProvider = () => window.phantom?.solana?.isPhantom ? window.phantom.solana : (window.solflare?.isSolflare ? window.solflare : null);
+async function connectWallet(silent) {
+  const p = getProvider();
+  if (!p) { if (!silent) msg('No wallet found. Install Phantom or Solflare, then reload this page.'); return; }
+  try {
+    await p.connect(silent ? { onlyIfTrusted: true } : undefined);
+    wallet = { p, pk: new PublicKey(p.publicKey.toString()) };
+    q$('#wConnect').textContent = 'Wallet connected'; msg(''); refresh();
+  } catch { if (!silent) msg('Connection was declined in the wallet.'); }
+}
+q$('#wConnect').onclick = () => connectWallet(false);
+addEventListener('load', () => setTimeout(() => connectWallet(true), 400)); // reconnects silently if you approved this site before
+
+q$('#wCreate').onclick = async () => {
+  if (!crypto.subtle) return msg('This page must be opened over https (your Vercel link).');
+  const pass = q$('#wPass').value;
+  if (pass.length < 8) return msg('Use a passphrase of at least 8 characters.');
+  if (localStorage.getItem('axon.session') && !confirm('A session wallet already exists. Replacing it loses any funds in it unless you backed up its key. Replace it?')) return;
+  burner = Keypair.generate();
+  localStorage.setItem('axon.session', await seal(burner.secretKey, pass));
+  q$('#wPass').value = ''; msg('Session wallet created. Back up its key before you fund it.'); refresh();
+};
+q$('#wUnlock').onclick = async () => {
+  const b = localStorage.getItem('axon.session');
+  if (!b) return msg('Create a session wallet first.');
+  try { burner = Keypair.fromSecretKey(await unseal(q$('#wPass').value, b)); q$('#wPass').value = ''; msg('Unlocked.'); refresh(); }
+  catch { msg('Wrong passphrase.'); }
+};
+q$('#wFund').onclick = async () => {
+  if (!wallet) return msg('Connect your wallet first.');
+  if (!burner) return msg('Unlock the session wallet first.');
+  const sol = Number(q$('#wAmt').value);
+  if (!(sol > 0)) return msg('Enter an amount in SOL.');
+  try {
+    msg('Approve the transfer in your wallet…');
+    const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: wallet.pk, toPubkey: burner.publicKey, lamports: Math.round(sol * LAMPORTS_PER_SOL) }));
+    tx.feePayer = wallet.pk; tx.recentBlockhash = (await conn().getLatestBlockhash()).blockhash;
+    const signed = await wallet.p.signTransaction(tx);
+    const sig = await conn().sendRawTransaction(signed.serialize());
+    await conn().confirmTransaction(sig, 'confirmed'); msg('Funded.'); refresh();
+  } catch (e) { msg('Funding failed: ' + (e.message || e)); }
+};
+q$('#wWithdraw').onclick = async () => {
+  if (!wallet || !burner) return msg('Connect your wallet and unlock the session wallet first.');
+  if (E.on) await stopEngine(true);
+  try {
+    const c = conn(), b = await c.getBalance(burner.publicKey);
+    if (b <= 5000) return msg('Nothing to withdraw.');
+    const tx = new Transaction().add(SystemProgram.transfer({ fromPubkey: burner.publicKey, toPubkey: wallet.pk, lamports: b - 5000 }));
+    tx.feePayer = burner.publicKey; tx.recentBlockhash = (await c.getLatestBlockhash()).blockhash; tx.sign(burner);
+    const sig = await c.sendRawTransaction(tx.serialize());
+    await c.confirmTransaction(sig, 'confirmed'); msg('Sent back to your main wallet.'); refresh();
+  } catch (e) { msg('Withdraw failed: ' + (e.message || e)); }
+};
+const download = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+q$('#wExport').onclick = () => {
+  if (!burner || !confirm('This saves the secret key to a file. Anyone who gets that file can take the funds. Continue?')) return;
+  download('axon-session-wallet.json', JSON.stringify([...burner.secretKey]), 'application/json');
+};
+q$('#eCsv').onclick = () => {
+  const rows = ['symbol,mint,exit,net_sol,held_s', ...S.closed.map(c => [JSON.stringify(c.symbol), c.mint, c.reason, c.net.toFixed(6), (c.heldMs / 1000).toFixed(0)].join(','))];
+  download('axon-trades.csv', rows.join('\n'), 'text/csv');
+};
+q$('#rTest').onclick = async () => {
+  const out = q$('#rOut'); out.textContent = 'Testing…';
+  try { const c = conn(), t = []; for (let i = 0; i < 3; i++) { const s = performance.now(); await c.getSlot(); t.push(performance.now() - s); }
+    out.textContent = 'Working, median ' + Math.round(t.sort((a, b) => a - b)[1]) + ' ms'; }
+  catch (e) { out.textContent = 'Failed: ' + String(e.message || e).slice(0, 90); }
+};
+
+/* ---------- curve math ---------- */
+const quoteBuy = (r, solIn) => { const net = solIn * (1 - pumpFee()), tok = r.vTok - r.vSol * r.vTok / (r.vSol + net); return { tok, impact: (net / tok) / (r.vSol / r.vTok) - 1 }; };
+const quoteSell = (r, tok) => { const g = r.vSol - r.vSol * r.vTok / (r.vTok + tok); return { g, out: g * (1 - pumpFee()) }; };
+function netIfSold(p) {
+  const adj = { vSol: p.last.vSol + p.ownSol, vTok: p.last.vTok - p.ownTok }, s = quoteSell(adj, p.tokens);
+  return s.out - FIXED.portal * (p.spent + s.g) - p.spent - fixedCost();
+}
+
+/* ---------- live orders (signed in this tab by the session wallet) ---------- */
+async function order(body) {
+  const payload = JSON.stringify({ publicKey: burner.publicKey.toBase58(), slippage: 10, priorityFee: FIXED.prio, pool: 'pump', ...body });
+  const post = url => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+  let res;
+  try { if (E.proxy) throw 0; res = await post('https://pumpportal.fun/api/trade-local'); }
+  catch { E.proxy = true; res = await post('/api/trade'); } // falls back to the tiny Vercel function if the browser blocks the direct call
+  if (!res.ok) throw new Error(await res.text());
+  const tx = VersionedTransaction.deserialize(new Uint8Array(await res.arrayBuffer()));
+  tx.sign([burner]);
+  const sig = await conn().sendRawTransaction(tx.serialize(), { skipPreflight: true, maxRetries: 2 });
+  await conn().confirmTransaction(sig, 'processed');
+  return sig;
+}
+
+/* ---------- strategy ---------- */
+function onCreate(m) {
+  const r = { vSol: m.vSolInBondingCurve, vTok: m.vTokensInBondingCurve };
+  onEvt({ type: 'token', mint: m.mint, symbol: m.symbol, name: m.name, devBuy: m.solAmount || 0, mc: m.marketCapSol });
+  const skip = (reason, node) => onEvt({ type: 'skip', mint: m.mint, symbol: m.symbol, reason, node });
+  if (E.paused) return skip('paused', 'risk');
+  if (E.open.size >= cfg.max) return skip('max positions open', 'risk');
+  if (S.pnl <= -cfg.loss) return skip('daily loss limit', 'risk');
+  if (!m.symbol || !m.name || m.name.length < 2) return skip('empty metadata', 'dev');
+  if ((m.solAmount || 0) > 3) return skip('dev holds too much', 'dev');
+  if (!(r.vSol > 0 && r.vTok > 0)) return skip('bad curve data', 'curve');
+  const q = quoteBuy(r, cfg.buy);
+  if (q.impact * 100 > 3) return skip('price impact too high', 'curve');
+  const be = fixedCost() / cfg.buy + 2 * (pumpFee() + FIXED.portal) + q.impact;
+  if (be * 100 > 12) return skip('break-even too far', 'cost');
+  enter(m, r, q.tok, q.impact, be);
+}
+async function enter(m, r, tok, impact, be) {
+  const p = { mint: m.mint, symbol: m.symbol, entryTs: Date.now(), spent: cfg.buy, tokens: tok, ownSol: cfg.buy * (1 - pumpFee()), ownTok: tok, last: r, ready: !E.live, selling: false };
+  E.open.set(p.mint, p);
+  E.ws?.readyState === 1 && E.ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: [p.mint] }));
+  onEvt({ type: 'buy', mint: p.mint, symbol: p.symbol, sol: cfg.buy, impactPct: impact * 100, breakevenPct: be * 100 });
+  if (E.live) {
+    try { await order({ action: 'buy', mint: p.mint, amount: cfg.buy, denominatedInSol: 'true' }); p.ready = true; }
+    catch (e) { E.open.delete(p.mint); onEvt({ type: 'cancel', mint: p.mint }); msg('Buy failed: ' + String(e.message || e).slice(0, 80)); }
+  }
+}
+function evaluate(p) {
+  if (!p.ready || p.selling) return;
+  const net = netIfSold(p);
+  onEvt({ type: 'tick', mint: p.mint, net });
+  if (net >= cfg.target) return void exit(p, 'take-profit', net);
+  if (net <= -cfg.stop) return void exit(p, 'stop-loss', net);
+  if (Date.now() - p.entryTs >= cfg.hold * 1000) return void exit(p, 'timeout', net);
+}
+async function exit(p, reason, net) {
+  if (p.selling) return;
+  p.selling = true;
+  if (E.live) {
+    try { await order({ action: 'sell', mint: p.mint, amount: '100%', denominatedInSol: 'false' }); }
+    catch { p.selling = false; return; } // keep the position, retry on the next tick
+  }
+  E.open.delete(p.mint);
+  E.ws?.readyState === 1 && E.ws.send(JSON.stringify({ method: 'unsubscribeTokenTrade', keys: [p.mint] }));
+  onEvt({ type: 'sell', mint: p.mint, symbol: p.symbol, reason, net, heldMs: Date.now() - p.entryTs });
+}
+
+/* ---------- market feed ---------- */
+function openFeed() {
+  const ws = new WebSocket('wss://pumpportal.fun/api/data'); E.ws = ws;
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
+    if (E.open.size) ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: [...E.open.keys()] }));
+  };
+  ws.onmessage = ev => {
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (!m.mint) return;
+    if (m.txType === 'create') return onCreate(m);
+    const p = E.open.get(m.mint);
+    if (p && m.vSolInBondingCurve) { p.last = { vSol: m.vSolInBondingCurve, vTok: m.vTokensInBondingCurve }; evaluate(p); }
+  };
+  ws.onclose = () => { if (E.on) setTimeout(openFeed, 2000); };
+  ws.onerror = () => ws.close();
+}
+setInterval(() => { if (E.on) E.open.forEach(evaluate); }, 1000);
+addEventListener('beforeunload', e => { if (E.on && E.open.size) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- start, stop, controls ---------- */
+const keepAwake = () => { try { navigator.wakeLock?.request('screen').then(l => { E.wake = l; }).catch(() => {}); } catch {} };
+document.addEventListener('visibilitychange', () => { if (E.on && document.visibilityState === 'visible') keepAwake(); });
+function startEngine() {
+  E.on = true; E.paused = false; stopDemo(); resetState();
+  S.link = true; S.mode = E.live ? 'live' : 'paper'; syncCfg(); renderMode();
+  q$('#eStart').textContent = 'Stop sniper'; q$('#bPause').textContent = 'Pause sniping';
+  openFeed(); keepAwake();
+  msg(E.live ? 'Live. Orders are signed in this tab, so keep it open.' : 'Paper trading on the live feed. No orders are sent.');
+}
+async function stopEngine(flatten) {
+  E.paused = true;
+  if (flatten) await Promise.all([...E.open.values()].map(p => exit(p, 'stop', netIfSold(p))));
+  const left = E.open.size;
+  E.on = false; E.ws && E.ws.close(); E.wake && E.wake.release().catch(() => {}); E.wake = null;
+  S.link = false; S.paused = false; q$('#eStart').textContent = 'Start sniper';
+  startDemo(); renderMode();
+  if (left) msg(left + ' position(s) could not be sold. Their tokens are still in the session wallet.');
+}
+q$('#eStart').onclick = async () => {
+  if (E.on) return stopEngine(true);
+  if (E.live) {
+    if (!burner) return msg('Unlock your session wallet to trade live.');
+    const b = await bal(burner.publicKey);
+    if (b === null || b < cfg.buy + 0.01) return msg('Fund the session wallet with at least ' + (cfg.buy + 0.01).toFixed(2) + ' SOL first.');
+    if (!confirm('Live mode sends real orders from your session wallet with real money. Most new pump.fun tokens lose value. Start?')) return;
+  }
+  startEngine();
+};
+const setMode = live => { if (E.on) return msg('Stop the sniper before switching mode.'); E.live = live; q$('#mPaper').classList.toggle('on', !live); q$('#mLive').classList.toggle('on', live); };
+q$('#mPaper').onclick = () => setMode(false);
+q$('#mLive').onclick = () => setMode(true);
+
+const oldPause = q$('#bPause').onclick, oldKill = q$('#bKill').onclick;
+q$('#bPause').onclick = () => { if (!E.on) return oldPause(); E.paused = !E.paused; S.paused = E.paused; q$('#bPause').textContent = E.paused ? 'Resume sniping' : 'Pause sniping'; };
+q$('#bKill').onclick = () => { if (!E.on) return oldKill(); E.paused = true; S.paused = true; q$('#bPause').textContent = 'Resume sniping'; E.open.forEach(p => exit(p, 'kill', netIfSold(p))); };
+
+syncCfg(); refresh(); setInterval(refresh, 20000);
+})();
+</script>
+</body>
+</html>
